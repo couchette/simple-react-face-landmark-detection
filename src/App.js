@@ -61,7 +61,7 @@ function App() {
       // 脸中心
       const faceCenterX = ((lEyeX + rEyeX) / 2 + keyPoints[4].x) / 2;
       const faceCenterY = ((lEyeY + rEyeY) / 2 + keyPoints[4].y) / 2;
-      // -------------------------------------
+      //
       var modelPoints = window.cv.matFromArray(6, 3, window.cv.CV_32F, [
         0.0,
         0.0,
@@ -148,6 +148,46 @@ function App() {
       var roll = rtn[2]; // 翻滚角
       // console.log("pitch:", pitch, "yaw:", yaw, "roll:", roll);
 
+      var noseEndPoint2D = new window.cv.Mat(1, 2, window.cv.CV_64F);
+      var jacobian = new window.cv.Mat(
+        imagePoints.rows * 2,
+        13,
+        window.cv.CV_64F
+      );
+      window.cv.projectPoints(
+        window.cv.matFromArray(1, 3, window.cv.CV_64F, [0.0, 0.0, 1000.0]),
+        rvec,
+        tvec,
+        cameraMatrix,
+        distCoeffs,
+        noseEndPoint2D,
+        jacobian
+      );
+
+      // console.log(noseEndPoint2D);
+
+      // 绘制线段，连接鼻尖和其它点
+      var p1 = new window.cv.Point(
+        Math.round(imagePoints.data32F[0]),
+        Math.round(imagePoints.data32F[1])
+      );
+      var p2 = new window.cv.Point(
+        Math.round(noseEndPoint2D.data64F[0]),
+        Math.round(noseEndPoint2D.data64F[1])
+      );
+
+      var zeroMat = window.cv.Mat.zeros(
+        inputResolution.height,
+        inputResolution.width,
+        window.cv.CV_8U
+      );
+
+      // console.log("p1", p1.x, p1.y);
+      // console.log("p2", p2.x, p2.y);
+
+      window.cv.line(zeroMat, p1, p2, new window.cv.Scalar(255, 0, 0), 2);
+      window.cv.imshow("cv", zeroMat);
+
       // console.log("左眼开合距离", lEyeValue.current);
       // console.log("右眼开合距离", rEyeValue.current);
       // console.log("嘴巴开合距离", mouthValue.current);
@@ -172,6 +212,7 @@ function App() {
       >
         <FfdCamera setPredictResult={setPredictResult} />
         <DataDisplayBoard props={displayData} />
+        <canvas id="cv"></canvas>
       </div>
     </div>
   );
