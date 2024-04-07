@@ -10,7 +10,7 @@ import { runDetector } from "./utils/detector";
 const { Option } = Select;
 const { Content } = Layout;
 
-const inputResolution = {
+export const inputResolution = {
   width: 640,
   height: 480,
 };
@@ -122,14 +122,21 @@ const FfdCamera = ({ setPredictResult }) => {
       >
         {stream && (
           <Webcam
-            // style={{ visibility: "hidden", position: "absolute" }}
             style={{
+              visibility: "hidden",
               position: "absolute",
               top: "0",
               bottom: "0",
               left: "0",
               right: "0",
             }}
+            // style={{
+            //   position: "absolute",
+            //   top: "0",
+            //   bottom: "0",
+            //   left: "0",
+            //   right: "0",
+            // }}
             width={Math.floor(inputResolution.width)}
             height={Math.floor(inputResolution.height)}
             videoConstraints={{
