@@ -1,7 +1,11 @@
 import * as faceLandmarksDetection from "@tensorflow-models/face-landmarks-detection";
-import { drawMesh } from "./drawMesh";
+import { drawCanvas } from "./drawCanvas";
 
-export const runDetector = async (video, canvas, setPredictResult) => {
+export const runDetector = async (
+  video,
+  canvas,
+  eachDetectCallback = (result) => {}
+) => {
   console.log("runDetector");
   const model = faceLandmarksDetection.SupportedModels.MediaPipeFaceMesh;
   const detectorConfig = {
@@ -17,9 +21,8 @@ export const runDetector = async (video, canvas, setPredictResult) => {
   const detect = async (net) => {
     const estimationConfig = { flipHorizontal: false };
     const faces = await net.estimateFaces(video, estimationConfig);
-    const ctx = canvas.getContext("2d");
-    requestAnimationFrame(() => drawMesh(faces[0], ctx));
-    setPredictResult(faces[0]);
+    requestAnimationFrame(() => drawCanvas(faces[0], canvas));
+    eachDetectCallback(faces[0]);
     detect(detector);
   };
   detect(detector);

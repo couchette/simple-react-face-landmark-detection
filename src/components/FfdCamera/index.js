@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { Button, Select, Layout } from "antd";
 import "@tensorflow/tfjs";
 // Register WebGL backend.
@@ -15,13 +15,29 @@ export const inputResolution = {
   height: 480,
 };
 
-const FfdCamera = ({ setPredictResult }) => {
+const FfdCamera = () => {
   const canvasRef = useRef(null);
   const [loaded, setLoaded] = useState(false);
   const [selectedDevice, setSelectedDevice] = useState(null);
   const [devices, setDevices] = useState([]);
   const [stream, setStream] = useState(null);
   const videoRef = useRef(null);
+  const frameCount = useRef(0);
+  const [frameRate, setFrameRate] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setFrameRate(frameCount.current);
+      frameCount.current = 0;
+    }, 1000);
+
+    // 清除定时器
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleEachDetectCallback = (result) => {
+    frameCount.current += 1;
+  };
 
   const handleVideoLoad = (videoNode) => {
     const video = videoNode.target;
@@ -105,7 +121,11 @@ const FfdCamera = ({ setPredictResult }) => {
         </Button>
         <Button
           onClick={() => {
-            runDetector(videoRef.current, canvasRef.current, setPredictResult);
+            runDetector(
+              videoRef.current,
+              canvasRef.current,
+              handleEachDetectCallback
+            );
           }}
           style={{ marginLeft: 8 }}
         >
@@ -145,7 +165,9 @@ const FfdCamera = ({ setPredictResult }) => {
             onLoadedData={handleVideoLoad}
           />
         )}
+        <div>{"帧数：" + String(frameRate)}</div>
         <canvas
+          id="faceMesh"
           style={{
             position: "absolute",
             top: "0",
