@@ -4,6 +4,7 @@ import { drawCanvas } from "./drawCanvas";
 export const runDetector = async (
   video,
   canvas,
+  runningFlag,
   eachDetectCallback = (result) => {}
 ) => {
   console.log("runDetector");
@@ -20,10 +21,12 @@ export const runDetector = async (
 
   const detect = async (net) => {
     const estimationConfig = { flipHorizontal: false };
-    const faces = await net.estimateFaces(video, estimationConfig);
-    requestAnimationFrame(() => drawCanvas(faces[0], canvas));
-    eachDetectCallback(faces[0]);
-    detect(detector);
+    if (runningFlag.current) {
+      const faces = await net.estimateFaces(video, estimationConfig);
+      requestAnimationFrame(() => drawCanvas(faces[0], canvas));
+      eachDetectCallback(faces[0]);
+      detect(detector);
+    }
   };
   detect(detector);
 };

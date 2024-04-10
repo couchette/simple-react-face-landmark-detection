@@ -18,12 +18,14 @@ export const inputResolution = {
 const FfdCamera = () => {
   const canvasRef = useRef(null);
   const [loaded, setLoaded] = useState(false);
+  const [isStartCamButtonLoading, setIsStartCamButtonLoading] = useState(false);
   const [selectedDevice, setSelectedDevice] = useState(null);
   const [devices, setDevices] = useState([]);
   const [stream, setStream] = useState(null);
   const videoRef = useRef(null);
   const frameCount = useRef(0);
   const [frameRate, setFrameRate] = useState(0);
+  const detecterRunningFlag = useRef(false);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -44,8 +46,16 @@ const FfdCamera = () => {
     videoRef.current = videoNode.target;
     if (video.readyState !== 4) return;
     if (loaded) return;
-    // runDetector(video, canvasRef.current);
+    detecterRunningFlag.current = true;
+    runDetector(
+      videoRef.current,
+      canvasRef.current,
+      detecterRunningFlag,
+      handleEachDetectCallback
+    );
+
     setLoaded(true);
+    setIsStartCamButtonLoading(false);
   };
 
   // 获取可用的视频设备列表
@@ -64,23 +74,33 @@ const FfdCamera = () => {
 
   // 开启摄像头
   const startCamera = async () => {
-    const constraints = {
-      video: {
-        deviceId: selectedDevice ? { exact: selectedDevice } : undefined,
-      },
-    };
-
-    const stream = await navigator.mediaDevices.getUserMedia(constraints);
-    setStream(stream);
+    setIsStartCamButtonLoading(true);
+    if (!loaded) {
+      const constraints = {
+        video: {
+          deviceId: selectedDevice ? { exact: selectedDevice } : undefined,
+        },
+      };
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      setStream(stream);
+    }
   };
 
   // 停止摄像头
   const stopCamera = () => {
+    if (detecterRunningFlag.current) {
+      stopDetector();
+    }
     if (stream) {
       stream.getTracks().forEach((track) => track.stop());
       setStream(null);
-      setSelectedDevice(null); // 重置选中的设备
+      setSelectedDevice(null);
+      setLoaded(false);
     }
+  };
+
+  const stopDetector = () => {
+    detecterRunningFlag.current = false;
   };
 
   // 获取视频设备列表
@@ -115,21 +135,11 @@ const FfdCamera = () => {
           alignContent: "center",
         }}
       >
-        <Button onClick={startCamera}>启动摄像头</Button>
-        <Button onClick={stopCamera} style={{ marginLeft: 8 }}>
-          停止摄像头
+        <Button onClick={startCamera} loading={isStartCamButtonLoading}>
+          启动相机
         </Button>
-        <Button
-          onClick={() => {
-            runDetector(
-              videoRef.current,
-              canvasRef.current,
-              handleEachDetectCallback
-            );
-          }}
-          style={{ marginLeft: 8 }}
-        >
-          人脸特征点识别
+        <Button onClick={stopCamera} style={{ marginLeft: 8 }}>
+          关闭相机
         </Button>
       </div>
       <div
@@ -165,7 +175,9 @@ const FfdCamera = () => {
             onLoadedData={handleVideoLoad}
           />
         )}
-        <div>{"帧数：" + String(frameRate)}</div>
+        <div style={{ fontFamily: "consolas" }}>
+          {String(frameRate) + " FPS"}
+        </div>
         <canvas
           id="faceMesh"
           style={{
@@ -174,7 +186,8 @@ const FfdCamera = () => {
             bottom: "0",
             left: "0",
             right: "0",
-            border: "1px solid black",
+            borderRadius: "5px",
+            boxShadow: "2px 2px 5px #888888",
           }}
           ref={canvasRef}
           width={inputResolution.width}
